@@ -1,0 +1,35 @@
+import requests
+import pandas as pd
+
+def get_compound_data_from_pubchem(compound_name, property_type='JSON'):
+    """Fetches compound data from PubChem PUG REST API."""
+    base_url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
+    compound_id_url = f"{base_url}/compound/name/{compound_name}/cids/{property_type}"
+    
+    try:
+        # First, get the CID (Compound ID)
+        cid_response = requests.get(compound_id_url)
+        cid_response.raise_for_status()
+        cid_data = cid_response.json()
+        cid = cid_data['IdentifierList']['CID'][0]
+        
+        # Now, get detailed properties using the CID
+        props = ['MolecularFormula', 'MolecularWeight', 'InChI', 'InChIKey', 'IUPACName', 'XLogP']
+        prop_url = f"{base_url}/compound/cid/{cid}/property/{','.join(props)}/{property_type}"
+        prop_response = requests.get(prop_url)
+        prop_response.raise_for_status()
+        prop_data = prop_response.json()
+        
+        return prop_data['PropertyTable']['Properties'][0]
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data for {compound_name}: {e}")
+        return None
+
+"""
+# Example Usage
+caffeine_data = get_compound_data_from_pubchem('caffeine')
+if caffeine_data:
+    print(f"Caffeine Molecular Formula: {caffeine_data.get('MolecularFormula')}")
+    print(f"Caffeine InChIKey: {caffeine_data.get('InChIKey')}") # This is a unique key!
+"""
